@@ -65,6 +65,11 @@ const EquipmentDetail: React.FC = () => {
     }
   };
 
+  // Format number as IDR
+  const formatCurrency = (value: number) => {
+    return `Rp ${value.toLocaleString("id-ID")}`;
+  };
+
   if (loading) {
     return (
       <div
@@ -121,7 +126,7 @@ const EquipmentDetail: React.FC = () => {
               {equipment.category?.name || "-"}
             </Descriptions.Item>
             <Descriptions.Item label="Daily Rental Price">
-              ${equipment.dailyRentalPrice.toFixed(2)}
+              {formatCurrency(equipment.dailyRentalPrice)}
             </Descriptions.Item>
             <Descriptions.Item label="Quantity">
               {equipment.quantity}

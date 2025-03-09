@@ -21,6 +21,12 @@ import EquipmentDetail from "./pages/Equipment/EquipmentDetail";
 import CreateEquipment from "./pages/Equipment/CreateEquipment";
 import EditEquipment from "./pages/Equipment/EditEquipment";
 
+// Equipment Category pages
+import EquipmentCategoryList from "./pages/EquipmentCategory";
+import CategoryDetail from "./pages/EquipmentCategory/CategoryDetail";
+import CreateCategory from "./pages/EquipmentCategory/CreateCategory";
+import EditCategory from "./pages/EquipmentCategory/EditCategory";
+
 // Configure theme
 const theme = {
   token: {
@@ -104,6 +110,14 @@ function AppRoutes() {
           <Route path=":id" element={<EquipmentDetail />} />
           <Route path="create" element={<CreateEquipment />} />
           <Route path="edit/:id" element={<EditEquipment />} />
+        </Route>
+
+        {/* Equipment Category Routes */}
+        <Route path="equipment-categories">
+          <Route index element={<EquipmentCategoryList />} />
+          <Route path=":id" element={<CategoryDetail />} />
+          <Route path="create" element={<CreateCategory />} />
+          <Route path="edit/:id" element={<EditCategory />} />
         </Route>
 
         {/* Add more routes as needed */}
