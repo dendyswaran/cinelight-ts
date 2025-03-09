@@ -28,6 +28,7 @@ import {
   LogoutOutlined,
   UserSwitchOutlined,
   QuestionCircleOutlined,
+  CameraOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import Logo from "../Logo";
@@ -52,6 +53,7 @@ const Layout: React.FC = () => {
 
   const menuItems = [
     { key: "/", label: "Dashboard", icon: <DashboardOutlined /> },
+    { key: "/equipment", label: "Equipment", icon: <CameraOutlined /> },
     { key: "/quotations", label: "Quotations", icon: <FileTextOutlined /> },
     {
       key: "/delivery-orders",

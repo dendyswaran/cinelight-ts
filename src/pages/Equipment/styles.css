@@ -1,0 +1,59 @@
+.equipment-list-container,
+.equipment-form-container,
+.equipment-detail-container {
+  padding: 16px;
+}
+
+.equipment-list-card,
+.equipment-form-card,
+.equipment-detail-card {
+  width: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.equipment-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.filter-card {
+  margin-bottom: 24px;
+  background-color: #fafafa;
+}
+
+.filter-buttons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  height: 100%;
+}
+
+/* Equipment Form */
+.equipment-form {
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+}
+
+/* Equipment Detail */
+.equipment-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.equipment-detail-info {
+  margin-bottom: 24px;
+}
+
+.equipment-detail-actions {
+  margin-top: 24px;
+} 

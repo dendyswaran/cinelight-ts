@@ -15,6 +15,12 @@ import Layout from "./components/Layout";
 import Loading from "./components/Loading";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
+// Equipment pages
+import EquipmentList from "./pages/Equipment";
+import EquipmentDetail from "./pages/Equipment/EquipmentDetail";
+import CreateEquipment from "./pages/Equipment/CreateEquipment";
+import EditEquipment from "./pages/Equipment/EditEquipment";
+
 // Configure theme
 const theme = {
   token: {
@@ -91,6 +97,15 @@ function AppRoutes() {
         }
       >
         <Route index element={<Dashboard />} />
+
+        {/* Equipment Routes */}
+        <Route path="equipment">
+          <Route index element={<EquipmentList />} />
+          <Route path=":id" element={<EquipmentDetail />} />
+          <Route path="create" element={<CreateEquipment />} />
+          <Route path="edit/:id" element={<EditEquipment />} />
+        </Route>
+
         {/* Add more routes as needed */}
       </Route>
 
