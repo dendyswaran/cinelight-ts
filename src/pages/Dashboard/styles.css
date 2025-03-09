@@ -1,0 +1,98 @@
+.dashboard-container {
+  padding: 0;
+}
+
+.chart-card {
+  height: 100%;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03), 
+              0 1px 6px -1px rgba(0, 0, 0, 0.02), 
+              0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.chart-card .ant-card-head {
+  padding: 0 16px;
+  min-height: 48px;
+}
+
+.chart-card .ant-card-head-title {
+  font-size: 16px;
+}
+
+.chart-card .ant-card-body {
+  padding: 16px;
+}
+
+.chart-container {
+  height: 300px;
+  width: 100%;
+  position: relative;
+}
+
+.doughnut-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.summary-cards {
+  margin-bottom: 24px;
+}
+
+.summary-card {
+  height: 120px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.summary-card .card-title {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.45);
+  margin-bottom: 8px;
+}
+
+.summary-card .card-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-card .card-value {
+  font-size: 30px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.summary-card .card-icon {
+  font-size: 32px;
+  opacity: 0.7;
+}
+
+.summary-card .card-footer {
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+}
+
+.summary-card .trend-up {
+  color: #52c41a;
+}
+
+.summary-card .trend-down {
+  color: #f5222d;
+}
+
+@media (max-width: 768px) {
+  .chart-container {
+    height: 250px;
+  }
+  
+  .summary-card {
+    height: 100px;
+    margin-bottom: 16px;
+  }
+  
+  .summary-card .card-value {
+    font-size: 24px;
+  }
+} 

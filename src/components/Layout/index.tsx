@@ -1,143 +1,222 @@
-import React, { useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { useState } from "react";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
-  AppBar,
-  Box,
-  Toolbar,
+  Layout as AntLayout,
+  Menu,
+  Button,
+  Avatar,
   Typography,
-  Drawer,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-  ListItemButton,
   Divider,
-  IconButton,
-  Container,
-} from '@mui/material';
+  Dropdown,
+  Badge,
+  Space,
+  theme,
+} from "antd";
+import type { MenuProps } from "antd";
 import {
-  Menu as MenuIcon,
-  Dashboard as DashboardIcon,
-  Description as QuotationIcon,
-  LocalShipping as DeliveryIcon,
-  Receipt as InvoiceIcon,
-  Inventory as InventoryIcon,
-  BarChart as AnalyticsIcon,
-  Settings as SettingsIcon,
-  Person as UserIcon,
-} from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+  MenuUnfoldOutlined,
+  MenuFoldOutlined,
+  DashboardOutlined,
+  FileTextOutlined,
+  CarOutlined,
+  FileDoneOutlined,
+  InboxOutlined,
+  BarChartOutlined,
+  SettingOutlined,
+  UserOutlined,
+  BellOutlined,
+  LogoutOutlined,
+  UserSwitchOutlined,
+  QuestionCircleOutlined,
+} from "@ant-design/icons";
+import { useAuth } from "../../contexts/AuthContext";
+import Logo from "../Logo";
+import "./styles.css";
 
-const drawerWidth = 240;
+const { Header, Sider, Content, Footer } = AntLayout;
+const { useToken } = theme;
+
+// Types for dropdown menu items
+type MenuItem = Required<MenuProps>["items"][number];
 
 const Layout: React.FC = () => {
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { user, logout } = useAuth();
+  const { token } = useToken();
 
-  const handleDrawerToggle = () => {
-    setMobileOpen(!mobileOpen);
+  const toggleCollapsed = () => {
+    setCollapsed(!collapsed);
   };
 
   const menuItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/' },
-    { text: 'Quotations', icon: <QuotationIcon />, path: '/quotations' },
-    { text: 'Delivery Orders', icon: <DeliveryIcon />, path: '/delivery-orders' },
-    { text: 'Invoices', icon: <InvoiceIcon />, path: '/invoices' },
-    { text: 'Inventory', icon: <InventoryIcon />, path: '/inventory' },
-    { text: 'Analytics', icon: <AnalyticsIcon />, path: '/analytics' },
-    { text: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-    { text: 'Users', icon: <UserIcon />, path: '/users' },
+    { key: "/", label: "Dashboard", icon: <DashboardOutlined /> },
+    { key: "/quotations", label: "Quotations", icon: <FileTextOutlined /> },
+    {
+      key: "/delivery-orders",
+      label: "Delivery Orders",
+      icon: <CarOutlined />,
+    },
+    { key: "/invoices", label: "Invoices", icon: <FileDoneOutlined /> },
+    { key: "/inventory", label: "Inventory", icon: <InboxOutlined /> },
+    { key: "/analytics", label: "Analytics", icon: <BarChartOutlined /> },
+    { key: "/settings", label: "Settings", icon: <SettingOutlined /> },
+    { key: "/users", label: "Users", icon: <UserOutlined /> },
   ];
 
-  const drawer = (
-    <div>
-      <Toolbar>
-        <Typography variant="h6" noWrap component="div">
-          Cinelight
-        </Typography>
-      </Toolbar>
-      <Divider />
-      <List>
-        {menuItems.map((item) => (
-          <ListItem key={item.text} disablePadding>
-            <ListItemButton onClick={() => navigate(item.path)}>
-              <ListItemIcon>{item.icon}</ListItemIcon>
-              <ListItemText primary={item.text} />
-            </ListItemButton>
-          </ListItem>
-        ))}
-      </List>
-    </div>
-  );
+  const userMenuItems: MenuItem[] = [
+    {
+      key: "profile",
+      icon: <UserOutlined />,
+      label: "Profile",
+      onClick: () => navigate("/profile"),
+    },
+    {
+      key: "account",
+      icon: <UserSwitchOutlined />,
+      label: "Account Settings",
+      onClick: () => navigate("/settings/account"),
+    },
+    {
+      key: "help",
+      icon: <QuestionCircleOutlined />,
+      label: "Help & Support",
+      onClick: () => navigate("/help"),
+    },
+    {
+      type: "divider",
+    } as MenuItem,
+    {
+      key: "logout",
+      icon: <LogoutOutlined />,
+      label: "Logout",
+      onClick: () => logout(),
+    },
+  ];
+
+  // Format user's name from firstName and lastName or use username as fallback
+  const getUserDisplayName = () => {
+    if (user) {
+      if (user.firstName && user.lastName) {
+        return `${user.firstName} ${user.lastName}`;
+      } else if (user.firstName) {
+        return user.firstName;
+      } else {
+        return user.username;
+      }
+    }
+    return "User";
+  };
 
   return (
-    <Box sx={{ display: 'flex' }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          ml: { sm: `${drawerWidth}px` },
+    <AntLayout className="app-layout">
+      <Sider
+        trigger={null}
+        collapsible
+        collapsed={collapsed}
+        breakpoint="lg"
+        collapsedWidth="80"
+        width={256}
+        className="app-sider"
+        theme="light"
+        onBreakpoint={(broken) => {
+          if (broken) {
+            setCollapsed(true);
+          }
         }}
       >
-        <Toolbar>
-          <IconButton
-            color="inherit"
-            aria-label="open drawer"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2, display: { sm: 'none' } }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Typography variant="h6" noWrap component="div">
-            Cinelight Management System
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Box
-        component="nav"
-        sx={{ width: { sm: drawerWidth }, flexShrink: { sm: 0 } }}
-        aria-label="menu items"
-      >
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{
-            keepMounted: true, // Better open performance on mobile
-          }}
-          sx={{
-            display: { xs: 'block', sm: 'none' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-        >
-          {drawer}
-        </Drawer>
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: 'none', sm: 'block' },
-            '& .MuiDrawer-paper': { boxSizing: 'border-box', width: drawerWidth },
-          }}
-          open
-        >
-          {drawer}
-        </Drawer>
-      </Box>
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 3,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-        }}
-      >
-        <Toolbar />
-        <Container maxWidth="lg">
-          <Outlet />
-        </Container>
-      </Box>
-    </Box>
+        <div className="logo-container">
+          <Logo collapsed={collapsed} />
+        </div>
+        <Menu
+          mode="inline"
+          selectedKeys={[location.pathname]}
+          items={menuItems}
+          onClick={({ key }) => navigate(key)}
+          className="app-menu"
+        />
+        <div className="sider-footer">
+          {!collapsed && (
+            <Typography.Text
+              type="secondary"
+              style={{ fontSize: "12px", padding: "0 24px" }}
+            >
+              Cinelight v1.0.0
+            </Typography.Text>
+          )}
+        </div>
+      </Sider>
+      <AntLayout>
+        <Header className="app-header">
+          <div className="header-left">
+            <Button
+              type="text"
+              icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+              onClick={toggleCollapsed}
+              className="trigger-button"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            />
+            <Typography.Title level={4} className="page-title">
+              {menuItems.find((item) => item.key === location.pathname)
+                ?.label || "Dashboard"}
+            </Typography.Title>
+          </div>
+          <div className="header-right">
+            <Space size={16}>
+              <Badge count={5} dot>
+                <Button
+                  type="text"
+                  shape="circle"
+                  icon={<BellOutlined />}
+                  size="large"
+                  aria-label="Notifications"
+                  onClick={() => navigate("/notifications")}
+                />
+              </Badge>
+              <Dropdown
+                menu={{ items: userMenuItems }}
+                placement="bottomRight"
+                arrow
+              >
+                <Button type="text" className="user-profile-button">
+                  <Space>
+                    <Avatar
+                      icon={<UserOutlined />}
+                      style={{ backgroundColor: token.colorPrimary }}
+                    >
+                      {user?.firstName
+                        ? user.firstName.charAt(0).toUpperCase()
+                        : user?.username?.charAt(0).toUpperCase()}
+                    </Avatar>
+                    {!collapsed && (
+                      <div className="user-info">
+                        <Typography.Text strong>
+                          {getUserDisplayName()}
+                        </Typography.Text>
+                        <Typography.Text type="secondary">
+                          {user?.role || "User"}
+                        </Typography.Text>
+                      </div>
+                    )}
+                  </Space>
+                </Button>
+              </Dropdown>
+            </Space>
+          </div>
+        </Header>
+        <Content className="app-content">
+          <div className="content-container">
+            <Outlet />
+          </div>
+        </Content>
+        <Footer className="app-footer">
+          <Typography.Text type="secondary">
+            Cinelight © {new Date().getFullYear()} - All Rights Reserved
+          </Typography.Text>
+        </Footer>
+      </AntLayout>
+    </AntLayout>
   );
 };
 
