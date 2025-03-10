@@ -1,7 +1,8 @@
 .category-list-container,
 .category-form-container,
 .category-detail-container {
-  padding: 16px;
+  padding: 0 16px;
+
 }
 
 .category-list-card,

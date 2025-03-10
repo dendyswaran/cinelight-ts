@@ -85,50 +85,47 @@ const CategoryForm: React.FC<CategoryFormProps> = ({ mode }) => {
   };
 
   return (
-    <div className="category-form-container">
-      <Card className="category-form-card">
-        <Title level={2}>
-          {mode === "create" ? "Create New Category" : "Edit Category"}
-        </Title>
+    <Card>
+      <Title level={4} style={{ marginTop: 0 }}>
+        {mode === "create" ? "Create New Category" : "Edit Category"}
+      </Title>
 
-        <Form
-          form={form}
-          layout="vertical"
-          onFinish={handleSubmit}
-          initialValues={{
-            isActive: true,
-          }}
-          className="category-form"
+      <Form
+        form={form}
+        layout="vertical"
+        onFinish={handleSubmit}
+        initialValues={{
+          isActive: true,
+        }}
+      >
+        <Form.Item
+          name="name"
+          label="Category Name"
+          rules={[{ required: true, message: "Please enter category name" }]}
         >
-          <Form.Item
-            name="name"
-            label="Category Name"
-            rules={[{ required: true, message: "Please enter category name" }]}
-          >
-            <Input placeholder="Enter category name" />
-          </Form.Item>
+          <Input placeholder="Enter category name" />
+        </Form.Item>
 
-          <Form.Item name="description" label="Description">
-            <TextArea rows={4} placeholder="Enter category description" />
-          </Form.Item>
+        <Form.Item name="description" label="Description">
+          <TextArea rows={4} placeholder="Enter category description" />
+        </Form.Item>
 
-          <Form.Item name="isActive" label="Status" valuePropName="checked">
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
-          </Form.Item>
+        <Form.Item name="isActive" label="Status" valuePropName="checked">
+          <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
+        </Form.Item>
 
-          <Form.Item className="form-actions">
-            <Space>
-              <Button onClick={() => navigate("/equipment-categories")}>
-                Cancel
-              </Button>
-              <Button type="primary" htmlType="submit" loading={loading}>
-                {mode === "create" ? "Create" : "Update"}
-              </Button>
-            </Space>
-          </Form.Item>
-        </Form>
-      </Card>
-    </div>
+        <Form.Item className="form-actions">
+          <Space>
+            <Button onClick={() => navigate("/equipment-categories")}>
+              Cancel
+            </Button>
+            <Button type="primary" htmlType="submit" loading={loading}>
+              {mode === "create" ? "Create" : "Update"}
+            </Button>
+          </Space>
+        </Form.Item>
+      </Form>
+    </Card>
   );
 };
 

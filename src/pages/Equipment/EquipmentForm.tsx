@@ -104,6 +104,18 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ mode }) => {
     }
   };
 
+  // Format number as IDR
+  const formatCurrency = (value: number | undefined) => {
+    if (value === undefined) return "";
+    return `Rp ${value.toLocaleString("id-ID")}`;
+  };
+
+  // Parse IDR string to number
+  const parseCurrency = (value: string | undefined) => {
+    if (!value || value === "Rp ") return undefined;
+    return Number(value.replace(/[^\d]/g, ""));
+  };
+
   return (
     <div className="equipment-form-container">
       <Card className="equipment-form-card">
@@ -119,7 +131,6 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ mode }) => {
             isActive: true,
             quantity: 1,
           }}
-          className="equipment-form"
         >
           <Form.Item
             name="name"
@@ -149,7 +160,7 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ mode }) => {
 
           <Form.Item
             name="dailyRentalPrice"
-            label="Daily Rental Price ($)"
+            label="Daily Rental Price (IDR)"
             rules={[
               { required: true, message: "Please enter daily rental price" },
               { type: "number", min: 0, message: "Price cannot be negative" },
@@ -157,10 +168,12 @@ const EquipmentForm: React.FC<EquipmentFormProps> = ({ mode }) => {
           >
             <InputNumber
               min={0}
-              step={0.01}
+              step={1000}
               style={{ width: "100%" }}
-              placeholder="0.00"
-              precision={2}
+              placeholder="0"
+              formatter={(value) => formatCurrency(value)}
+              // @ts-ignore
+              parser={(value) => parseCurrency(value)}
             />
           </Form.Item>
 

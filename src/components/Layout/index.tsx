@@ -6,7 +6,6 @@ import {
   Button,
   Avatar,
   Typography,
-  Divider,
   Dropdown,
   Badge,
   Space,
@@ -30,6 +29,7 @@ import {
   QuestionCircleOutlined,
   CameraOutlined,
   AppstoreOutlined,
+  DatabaseOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import Logo from "../Logo";
@@ -43,6 +43,7 @@ type MenuItem = Required<MenuProps>["items"][number];
 
 const Layout: React.FC = () => {
   const [collapsed, setCollapsed] = useState(false);
+  const [openKeys, setOpenKeys] = useState<string[]>(["masterData"]);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, logout } = useAuth();
@@ -52,25 +53,108 @@ const Layout: React.FC = () => {
     setCollapsed(!collapsed);
   };
 
-  const menuItems = [
-    { key: "/", label: "Dashboard", icon: <DashboardOutlined /> },
-    { key: "/equipment", label: "Equipment", icon: <CameraOutlined /> },
+  // Determine which menu keys should be selected based on the current path
+  const getSelectedKeys = () => {
+    const pathname = location.pathname;
+
+    // For root paths that match exactly
+    if (
+      pathname === "/" ||
+      pathname === "/quotations" ||
+      pathname === "/delivery-orders" ||
+      pathname === "/invoices" ||
+      pathname === "/inventory" ||
+      pathname === "/analytics" ||
+      pathname === "/settings" ||
+      pathname === "/users"
+    ) {
+      return [pathname];
+    }
+
+    // For sub-paths
+    if (pathname.startsWith("/equipment")) {
+      return ["/equipment"];
+    } else if (pathname.startsWith("/equipment-categories")) {
+      return ["/equipment-categories"];
+    }
+
+    return [pathname];
+  };
+
+  // Handle submenu open changes
+  const onOpenChange: MenuProps["onOpenChange"] = (keys) => {
+    setOpenKeys(keys as string[]);
+  };
+
+  // Define menu items
+  const menuItems: MenuProps["items"] = [
     {
-      key: "/equipment-categories",
-      label: "Categories",
-      icon: <AppstoreOutlined />,
+      key: "/",
+      label: "Dashboard",
+      icon: <DashboardOutlined />,
+      onClick: () => navigate("/"),
     },
-    { key: "/quotations", label: "Quotations", icon: <FileTextOutlined /> },
+    {
+      key: "masterData",
+      label: "Master Data",
+      icon: <DatabaseOutlined />,
+      children: [
+        {
+          key: "/equipment",
+          label: "Equipment",
+          icon: <CameraOutlined />,
+          onClick: () => navigate("/equipment"),
+        },
+        {
+          key: "/equipment-categories",
+          label: "Categories",
+          icon: <AppstoreOutlined />,
+          onClick: () => navigate("/equipment-categories"),
+        },
+      ],
+    },
+    {
+      key: "/quotations",
+      label: "Quotations",
+      icon: <FileTextOutlined />,
+      onClick: () => navigate("/quotations"),
+    },
     {
       key: "/delivery-orders",
       label: "Delivery Orders",
       icon: <CarOutlined />,
+      onClick: () => navigate("/delivery-orders"),
     },
-    { key: "/invoices", label: "Invoices", icon: <FileDoneOutlined /> },
-    { key: "/inventory", label: "Inventory", icon: <InboxOutlined /> },
-    { key: "/analytics", label: "Analytics", icon: <BarChartOutlined /> },
-    { key: "/settings", label: "Settings", icon: <SettingOutlined /> },
-    { key: "/users", label: "Users", icon: <UserOutlined /> },
+    {
+      key: "/invoices",
+      label: "Invoices",
+      icon: <FileDoneOutlined />,
+      onClick: () => navigate("/invoices"),
+    },
+    {
+      key: "/inventory",
+      label: "Inventory",
+      icon: <InboxOutlined />,
+      onClick: () => navigate("/inventory"),
+    },
+    {
+      key: "/analytics",
+      label: "Analytics",
+      icon: <BarChartOutlined />,
+      onClick: () => navigate("/analytics"),
+    },
+    {
+      key: "/settings",
+      label: "Settings",
+      icon: <SettingOutlined />,
+      onClick: () => navigate("/settings"),
+    },
+    {
+      key: "/users",
+      label: "Users",
+      icon: <UserOutlined />,
+      onClick: () => navigate("/users"),
+    },
   ];
 
   const userMenuItems: MenuItem[] = [
@@ -117,6 +201,45 @@ const Layout: React.FC = () => {
     return "User";
   };
 
+  // Function to determine the title shown in the header
+  const getPageTitle = () => {
+    const pathname = location.pathname;
+
+    // First check if it's a root path
+    if (pathname === "/") return "Dashboard";
+
+    // For equipment paths
+    if (pathname.startsWith("/equipment") && pathname !== "/equipment") {
+      return "Equipment Management";
+    }
+
+    // For category paths
+    if (
+      pathname.startsWith("/equipment-categories") &&
+      pathname !== "/equipment-categories"
+    ) {
+      return "Category Management";
+    }
+
+    // For main routes
+    if (pathname === "/equipment") return "Equipment";
+    if (pathname === "/equipment-categories") return "Categories";
+    if (pathname === "/quotations") return "Quotations";
+    if (pathname === "/delivery-orders") return "Delivery Orders";
+    if (pathname === "/invoices") return "Invoices";
+    if (pathname === "/inventory") return "Inventory";
+    if (pathname === "/analytics") return "Analytics";
+    if (pathname === "/settings") return "Settings";
+    if (pathname === "/users") return "Users";
+
+    // Default to showing the path
+    return pathname
+      .split("/")
+      .filter(Boolean)
+      .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+      .join(" > ");
+  };
+
   return (
     <AntLayout className="app-layout">
       <Sider
@@ -139,9 +262,10 @@ const Layout: React.FC = () => {
         </div>
         <Menu
           mode="inline"
-          selectedKeys={[location.pathname]}
+          selectedKeys={getSelectedKeys()}
+          openKeys={collapsed ? [] : openKeys}
+          onOpenChange={onOpenChange}
           items={menuItems}
-          onClick={({ key }) => navigate(key)}
           className="app-menu"
         />
         <div className="sider-footer">
@@ -166,8 +290,7 @@ const Layout: React.FC = () => {
               aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             />
             <Typography.Title level={4} className="page-title">
-              {menuItems.find((item) => item.key === location.pathname)
-                ?.label || "Dashboard"}
+              {getPageTitle()}
             </Typography.Title>
           </div>
           <div className="header-right">
