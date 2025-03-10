@@ -33,6 +33,13 @@ import BundleDetail from "./pages/EquipmentBundle/BundleDetail";
 import CreateBundle from "./pages/EquipmentBundle/CreateBundle";
 import EditBundle from "./pages/EquipmentBundle/EditBundle";
 
+// Quotation pages
+import {
+  QuotationList,
+  QuotationDetail,
+  QuotationForm,
+} from "./pages/Quotation";
+
 // Configure theme
 const theme = {
   token: {
@@ -132,6 +139,14 @@ function AppRoutes() {
           <Route path=":id" element={<BundleDetail />} />
           <Route path="create" element={<CreateBundle />} />
           <Route path="edit/:id" element={<EditBundle />} />
+        </Route>
+
+        {/* Quotation Routes */}
+        <Route path="quotations">
+          <Route index element={<QuotationList />} />
+          <Route path=":id" element={<QuotationDetail />} />
+          <Route path="create" element={<QuotationForm mode="create" />} />
+          <Route path="edit/:id" element={<QuotationForm mode="edit" />} />
         </Route>
 
         {/* Add more routes as needed */}
