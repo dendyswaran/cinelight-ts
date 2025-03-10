@@ -286,8 +286,8 @@ const BundleForm: React.FC<BundleFormProps> = ({ mode }) => {
   ];
 
   return (
-    <div className="bundle-form-container">
-      <Card className="bundle-form-card">
+    <div className="equipment-form-container">
+      <Card className="equipment-form-card">
         <Title level={2}>
           {mode === "create"
             ? "Create Equipment Bundle"
@@ -302,7 +302,6 @@ const BundleForm: React.FC<BundleFormProps> = ({ mode }) => {
             isActive: true,
             discount: 0,
           }}
-          className="bundle-form"
         >
           <Form.Item
             name="name"
@@ -327,6 +326,7 @@ const BundleForm: React.FC<BundleFormProps> = ({ mode }) => {
               form={itemsForm}
               layout="vertical"
               className="bundle-item-form"
+              style={{ marginTop: 16 }}
             >
               <div className="bundle-item-row">
                 <Space align="baseline" style={{ width: "100%" }}>
@@ -381,6 +381,7 @@ const BundleForm: React.FC<BundleFormProps> = ({ mode }) => {
               rowKey="id"
               pagination={false}
               size="small"
+              style={{ marginTop: 16 }}
             />
 
             <Divider />
@@ -428,7 +429,7 @@ const BundleForm: React.FC<BundleFormProps> = ({ mode }) => {
               style={{ width: "100%" }}
               placeholder="0"
               formatter={(value) => formatCurrency(value)}
-              // @ts-ignore - Type mismatch in the parser function
+              // @ts-ignore
               parser={(value) => parseCurrency(value)}
               addonAfter={
                 <Tooltip title="Calculate from items">
@@ -442,7 +443,7 @@ const BundleForm: React.FC<BundleFormProps> = ({ mode }) => {
             <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
           </Form.Item>
 
-          <Form.Item className="bundle-form-actions">
+          <Form.Item className="form-actions">
             <Space>
               <Button onClick={() => navigate("/equipment-bundles")}>
                 Cancel
