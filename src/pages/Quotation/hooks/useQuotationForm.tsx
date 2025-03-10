@@ -39,10 +39,12 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
   const [discount, setDiscount] = useState<number>(0);
 
   // Selected entity IDs for adding items within the hierarchy
-  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
-    null
+  const [selectedSectionId, setSelectedSectionId] = useState<
+    number | undefined
+  >(undefined);
+  const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>(
+    undefined
   );
-  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -168,50 +170,80 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
       setSubmitting(true);
 
       // Prepare quotation data with hierarchy
-      const sectionsData = sections.map((section) => ({
-        id: section.id,
-        name: section.name,
-        date: section.date,
-        description: section.description,
-        groups: groups
-          .filter((group) => group.sectionId === section.id)
-          .map((group) => ({
-            id: group.id,
-            name: group.name,
-            items: items
-              .filter((item) => item.groupId === group.id)
-              .map((item) => ({
-                id: item.id,
-                itemName: item.itemName,
-                description: item.description,
-                quantity: item.quantity,
-                unit: item.unit,
-                pricePerDay: item.pricePerDay,
-                days: item.days,
-                total: item.total,
-                type: item.type,
-                remarks: item.remarks,
-                equipmentId: item.equipmentId,
-              })),
-          })),
-      }));
+      const sectionsData = sections.map((section) => {
+        // For new sections (negative IDs), omit the ID field
+        const sectionData: any = {
+          name: section.name,
+          date: section.date,
+          description: section.description,
+          groups: groups
+            .filter((group) => group.sectionId === section.id)
+            .map((group) => {
+              // For new groups (negative IDs), omit the ID field
+              const groupData: any = {
+                name: group.name,
+                description: group.description,
+                items: items
+                  .filter((item) => item.groupId === group.id)
+                  .map((item) => {
+                    // For new items (negative IDs), omit the ID field
+                    const itemData: any = {
+                      itemName: item.itemName,
+                      description: item.description,
+                      quantity: item.quantity,
+                      unit: item.unit,
+                      pricePerDay: item.pricePerDay,
+                      days: item.days,
+                      total: item.total,
+                      type: item.type,
+                      remarks: item.remarks,
+                      equipmentId: item.equipmentId,
+                    };
+                    // Only include ID if it's a positive number (existing item)
+                    if (item.id && item.id > 0) {
+                      itemData.id = item.id;
+                    }
+                    return itemData;
+                  }),
+              };
+              // Only include ID if it's a positive number (existing group)
+              if (group.id && group.id > 0) {
+                groupData.id = group.id;
+              }
+              return groupData;
+            }),
+        };
+
+        // Only include ID if it's a positive number (existing section)
+        if (section.id && section.id > 0) {
+          sectionData.id = section.id;
+        }
+        return sectionData;
+      });
 
       // Include any items not assigned to groups
       const standaloneItems = items
         .filter((item) => !item.groupId)
-        .map((item) => ({
-          id: item.id,
-          itemName: item.itemName,
-          description: item.description,
-          quantity: item.quantity,
-          unit: item.unit,
-          pricePerDay: item.pricePerDay,
-          days: item.days,
-          total: item.total,
-          type: item.type,
-          remarks: item.remarks,
-          equipmentId: item.equipmentId,
-        }));
+        .map((item) => {
+          // For new items (negative IDs), omit the ID field
+          const itemData: any = {
+            itemName: item.itemName,
+            description: item.description,
+            quantity: item.quantity,
+            unit: item.unit,
+            pricePerDay: item.pricePerDay,
+            days: item.days,
+            total: item.total,
+            type: item.type,
+            remarks: item.remarks,
+            equipmentId: item.equipmentId,
+          };
+          // Only include ID if it's a positive number (existing item)
+          if (item.id && item.id > 0) {
+            itemData.id = item.id;
+          }
+          return itemData;
+        });
 
       const quotationData = {
         ...values,
@@ -251,7 +283,7 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
   // Add a new section to the quotation
   const handleAddSection = (values: any) => {
     const newSection: QuotationSection = {
-      id: Date.now(), // Temporary ID for UI
+      id: -Date.now(), // Use negative timestamp as temporary ID
       quotationId: quotation?.id || 0,
       name: values.name,
       date: values.date.format("YYYY-MM-DD"),
@@ -295,8 +327,8 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
     setSections(remainingSections);
 
     if (selectedSectionId === sectionId) {
-      setSelectedSectionId(null);
-      setSelectedGroupId(null);
+      setSelectedSectionId(undefined);
+      setSelectedGroupId(undefined);
     }
 
     message.success("Section removed");
@@ -310,7 +342,7 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
     }
 
     const newGroup: QuotationItemGroup = {
-      id: Date.now(), // Temporary ID for UI
+      id: -Date.now(), // Use negative timestamp as temporary ID
       name: values.name,
       sectionId: selectedSectionId,
       description: values.description,
@@ -336,7 +368,7 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
     setGroups(remainingGroups);
 
     if (selectedGroupId === groupId) {
-      setSelectedGroupId(null);
+      setSelectedGroupId(undefined);
     }
 
     message.success("Group removed");
@@ -356,7 +388,7 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
     const totalPrice = pricePerDay * quantity * days;
 
     const newItem: QuotationItem = {
-      id: Date.now(), // Temporary ID for UI
+      id: -Date.now(), // Use negative timestamp as temporary ID
       quotationId: quotation?.id || 0,
       groupId: selectedGroupId,
       equipmentId: values.equipmentId,

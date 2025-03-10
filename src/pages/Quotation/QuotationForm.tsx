@@ -224,12 +224,12 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
 
     return (
       <Collapse
-        defaultActiveKey={sections.map((s) => s.id.toString())}
+        defaultActiveKey={sections.map((s) => s.id?.toString() || "")}
         expandIconPosition="start"
       >
         {sections.map((section) => (
           <Panel
-            key={section.id.toString()}
+            key={section.id?.toString() || ""}
             header={
               <div
                 style={{
@@ -256,7 +256,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                 icon={<DeleteOutlined />}
                 onClick={(e) => {
                   e.stopPropagation();
-                  handleRemoveSection(section.id);
+                  if (section.id) handleRemoveSection(section.id);
                 }}
               />
             }
@@ -274,7 +274,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                     type="dashed"
                     icon={<PlusOutlined />}
                     onClick={() => {
-                      setSelectedSectionId(section.id);
+                      if (section.id) setSelectedSectionId(section.id);
                       groupForm.resetFields();
                     }}
                   >
@@ -332,7 +332,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                       .filter((group) => group.sectionId === section.id)
                       .map((group) => (
                         <Panel
-                          key={group.id.toString()}
+                          key={group.id?.toString() || ""}
                           header={
                             <div
                               style={{
@@ -359,7 +359,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                               icon={<DeleteOutlined />}
                               onClick={(e) => {
                                 e.stopPropagation();
-                                handleRemoveGroup(group.id);
+                                if (group.id) handleRemoveGroup(group.id);
                               }}
                             />
                           }
@@ -378,7 +378,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                                 type="dashed"
                                 icon={<PlusOutlined />}
                                 onClick={() => {
-                                  setSelectedGroupId(group.id);
+                                  if (group.id) setSelectedGroupId(group.id);
                                   itemForm.resetFields();
                                 }}
                               >
@@ -423,7 +423,7 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
             type="dashed"
             icon={<PlusOutlined />}
             onClick={() => {
-              setSelectedGroupId(null);
+              setSelectedGroupId(undefined);
               itemForm.resetFields();
             }}
           >
@@ -570,9 +570,9 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
         <Form.Item>
           <Button
             type="primary"
-            htmlType="submit"
             block
             icon={<PlusOutlined />}
+            onClick={() => itemForm.submit()}
           >
             Add Item
           </Button>
@@ -753,8 +753,8 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                 <Form
                   form={sectionForm}
                   layout="vertical"
-                  onFinish={handleAddSection}
                   className="section-form"
+                  onFinish={handleAddSection}
                 >
                   <Row gutter={16}>
                     <Col span={12}>
@@ -784,7 +784,10 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                     </Col>
                     <Col span={6}>
                       <Form.Item label=" " style={{ marginBottom: 0 }}>
-                        <Button type="primary" htmlType="submit">
+                        <Button
+                          onClick={() => sectionForm.submit()}
+                          type="primary"
+                        >
                           Add Section
                         </Button>
                       </Form.Item>
