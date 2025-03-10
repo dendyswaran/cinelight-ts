@@ -8,6 +8,7 @@ import {
   QuotationStatus,
   QuotationItem,
   QuotationSection,
+  QuotationItemGroup,
   ItemType,
 } from "../../../services/QuotationService";
 import {
@@ -23,17 +24,25 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
   const [form] = Form.useForm();
   const [itemForm] = Form.useForm();
   const [sectionForm] = Form.useForm();
+  const [groupForm] = Form.useForm();
 
   const [loading, setLoading] = useState<boolean>(false);
   const [submitting, setSubmitting] = useState<boolean>(false);
   const [quotation, setQuotation] = useState<Quotation | null>(null);
   const [items, setItems] = useState<QuotationItem[]>([]);
   const [sections, setSections] = useState<QuotationSection[]>([]);
+  const [groups, setGroups] = useState<QuotationItemGroup[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [total, setTotal] = useState<number>(0);
   const [subtotal, setSubtotal] = useState<number>(0);
   const [tax, setTax] = useState<number>(0);
   const [discount, setDiscount] = useState<number>(0);
+
+  // Selected entity IDs for adding items within the hierarchy
+  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
+    null
+  );
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null);
 
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -83,6 +92,15 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
 
       if (quotationData.sections) {
         setSections(quotationData.sections);
+
+        // Extract groups from sections
+        const allGroups: QuotationItemGroup[] = [];
+        quotationData.sections.forEach((section) => {
+          if (section.groups) {
+            allGroups.push(...section.groups);
+          }
+        });
+        setGroups(allGroups);
       }
 
       // Set tax and discount for calculations
@@ -142,21 +160,46 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
   // Handle form submission
   const handleSubmit = async (values: any) => {
     try {
-      if (items.length === 0) {
-        message.error("Quotation must have at least one item");
+      if (items.length === 0 && sections.length === 0) {
+        message.error("Quotation must have at least one item or section");
         return;
       }
 
       setSubmitting(true);
 
-      // Prepare quotation data
-      const quotationData = {
-        ...values,
-        issueDate: values.issueDate.format("YYYY-MM-DD"),
-        validUntil: values.validUntil
-          ? values.validUntil.format("YYYY-MM-DD")
-          : undefined,
-        items: items.map((item) => ({
+      // Prepare quotation data with hierarchy
+      const sectionsData = sections.map((section) => ({
+        id: section.id,
+        name: section.name,
+        date: section.date,
+        description: section.description,
+        groups: groups
+          .filter((group) => group.sectionId === section.id)
+          .map((group) => ({
+            id: group.id,
+            name: group.name,
+            items: items
+              .filter((item) => item.groupId === group.id)
+              .map((item) => ({
+                id: item.id,
+                itemName: item.itemName,
+                description: item.description,
+                quantity: item.quantity,
+                unit: item.unit,
+                pricePerDay: item.pricePerDay,
+                days: item.days,
+                total: item.total,
+                type: item.type,
+                remarks: item.remarks,
+                equipmentId: item.equipmentId,
+              })),
+          })),
+      }));
+
+      // Include any items not assigned to groups
+      const standaloneItems = items
+        .filter((item) => !item.groupId)
+        .map((item) => ({
           id: item.id,
           itemName: item.itemName,
           description: item.description,
@@ -168,16 +211,16 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
           type: item.type,
           remarks: item.remarks,
           equipmentId: item.equipmentId,
-        })),
-        sections:
-          sections.length > 0
-            ? sections.map((section) => ({
-                id: section.id,
-                name: section.name,
-                date: section.date,
-                description: section.description,
-              }))
-            : undefined,
+        }));
+
+      const quotationData = {
+        ...values,
+        issueDate: values.issueDate.format("YYYY-MM-DD"),
+        validUntil: values.validUntil
+          ? values.validUntil.format("YYYY-MM-DD")
+          : undefined,
+        sections: sectionsData,
+        items: standaloneItems,
         subtotal,
         tax: values.tax,
         discount: values.discount,
@@ -205,15 +248,117 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
     }
   };
 
-  // Add a new item to the quotation
+  // Add a new section to the quotation
+  const handleAddSection = (values: any) => {
+    const newSection: QuotationSection = {
+      id: Date.now(), // Temporary ID for UI
+      quotationId: quotation?.id || 0,
+      name: values.name,
+      date: values.date.format("YYYY-MM-DD"),
+      description: values.description,
+      subtotal: 0,
+      groups: [],
+    };
+
+    setSections([...sections, newSection]);
+    sectionForm.resetFields();
+    setSelectedSectionId(newSection.id);
+    message.success(`Section "${values.name}" added`);
+  };
+
+  // Remove a section from the quotation
+  const handleRemoveSection = (sectionId: number) => {
+    // Remove all groups belonging to this section
+    const groupsToRemove = groups.filter(
+      (group) => group.sectionId === sectionId
+    );
+    const groupIdsToRemove = groupsToRemove.map((group) => group.id);
+
+    // Remove all items belonging to these groups
+    const remainingItems = items.filter(
+      (item) =>
+        !item.groupId || !groupIdsToRemove.includes(item.groupId as number)
+    );
+
+    // Remove the groups
+    const remainingGroups = groups.filter(
+      (group) => group.sectionId !== sectionId
+    );
+
+    // Remove the section
+    const remainingSections = sections.filter(
+      (section) => section.id !== sectionId
+    );
+
+    setItems(remainingItems);
+    setGroups(remainingGroups);
+    setSections(remainingSections);
+
+    if (selectedSectionId === sectionId) {
+      setSelectedSectionId(null);
+      setSelectedGroupId(null);
+    }
+
+    message.success("Section removed");
+  };
+
+  // Add a new group to the selected section
+  const handleAddGroup = (values: any) => {
+    if (!selectedSectionId) {
+      message.error("Please select a section first");
+      return;
+    }
+
+    const newGroup: QuotationItemGroup = {
+      id: Date.now(), // Temporary ID for UI
+      name: values.name,
+      sectionId: selectedSectionId,
+      description: values.description,
+      total: 0,
+      items: [],
+    };
+
+    setGroups([...groups, newGroup]);
+    groupForm.resetFields();
+    setSelectedGroupId(newGroup.id);
+    message.success(`Group "${values.name}" added`);
+  };
+
+  // Remove a group from a section
+  const handleRemoveGroup = (groupId: number) => {
+    // Remove all items belonging to this group
+    const remainingItems = items.filter((item) => item.groupId !== groupId);
+
+    // Remove the group
+    const remainingGroups = groups.filter((group) => group.id !== groupId);
+
+    setItems(remainingItems);
+    setGroups(remainingGroups);
+
+    if (selectedGroupId === groupId) {
+      setSelectedGroupId(null);
+    }
+
+    message.success("Group removed");
+  };
+
+  // Add a new item to a group or quotation
   const handleAddItem = (values: any) => {
     const selectedEquipment = values.equipmentId
       ? equipment.find((e) => e.id === values.equipmentId)
       : undefined;
 
+    const pricePerDay =
+      values.pricePerDay ||
+      (selectedEquipment ? selectedEquipment.dailyRentalPrice : 0);
+    const quantity = values.quantity || 1;
+    const days = values.days || 1;
+    const totalPrice = pricePerDay * quantity * days;
+
     const newItem: QuotationItem = {
       id: Date.now(), // Temporary ID for UI
       quotationId: quotation?.id || 0,
+      groupId: selectedGroupId,
       equipmentId: values.equipmentId,
       equipment: selectedEquipment
         ? {
@@ -225,52 +370,29 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
       itemName:
         values.itemName || (selectedEquipment ? selectedEquipment.name : ""),
       description: values.description,
-      quantity: values.quantity || 1,
+      quantity: quantity,
       unit: values.unit || "Set",
-      pricePerDay:
-        values.pricePerDay ||
-        (selectedEquipment ? selectedEquipment.dailyRentalPrice : 0),
-      days: values.days || 1,
-      total:
-        (values.quantity || 1) *
-        (values.pricePerDay ||
-          (selectedEquipment ? selectedEquipment.dailyRentalPrice : 0)) *
-        (values.days || 1),
+      pricePerDay: pricePerDay,
+      days: days,
+      total: totalPrice,
       type: values.type || ItemType.RENTAL,
       remarks: values.remarks,
     };
 
     setItems([...items, newItem]);
     itemForm.resetFields();
+    message.success(`Item "${newItem.itemName}" added`);
   };
 
-  // Remove an item from the quotation
+  // Remove an item
   const handleRemoveItem = (itemId: number) => {
     setItems(items.filter((item) => item.id !== itemId));
-  };
-
-  // Add a new section to the quotation
-  const handleAddSection = (values: any) => {
-    const newSection: QuotationSection = {
-      id: Date.now(), // Temporary ID for UI
-      quotationId: quotation?.id || 0,
-      name: values.name,
-      date: values.date.format("YYYY-MM-DD"),
-      description: values.description,
-    };
-
-    setSections([...sections, newSection]);
-    sectionForm.resetFields();
-  };
-
-  // Remove a section from the quotation
-  const handleRemoveSection = (sectionId: number) => {
-    setSections(sections.filter((section) => section.id !== sectionId));
+    message.success("Item removed");
   };
 
   // Calculate the total quotation amount
   const calculateTotals = () => {
-    // Calculate subtotal
+    // Calculate subtotal from all items
     const calculatedSubtotal = items.reduce(
       (sum, item) => sum + (item.total || 0),
       0
@@ -292,6 +414,30 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
     // Calculate total
     const calculatedTotal = calculatedSubtotal + taxAmount - discountAmount;
     setTotal(calculatedTotal);
+
+    // Update group totals
+    const updatedGroups = groups.map((group) => {
+      const groupItems = items.filter((item) => item.groupId === group.id);
+      const groupTotal = groupItems.reduce(
+        (sum, item) => sum + (item.total || 0),
+        0
+      );
+      return { ...group, total: groupTotal };
+    });
+    setGroups(updatedGroups);
+
+    // Update section subtotals
+    const updatedSections = sections.map((section) => {
+      const sectionGroups = updatedGroups.filter(
+        (group) => group.sectionId === section.id
+      );
+      const sectionSubtotal = sectionGroups.reduce(
+        (sum, group) => sum + (group.total || 0),
+        0
+      );
+      return { ...section, subtotal: sectionSubtotal };
+    });
+    setSections(updatedSections);
   };
 
   // Format currency values
@@ -310,21 +456,29 @@ const useQuotationForm = ({ mode }: UseQuotationFormProps) => {
     form,
     itemForm,
     sectionForm,
+    groupForm,
     loading,
     submitting,
     quotation,
     items,
     sections,
+    groups,
     equipment,
     subtotal,
     tax,
     discount,
     total,
+    selectedSectionId,
+    selectedGroupId,
+    setSelectedSectionId,
+    setSelectedGroupId,
     handleSubmit,
     handleAddItem,
     handleRemoveItem,
     handleAddSection,
     handleRemoveSection,
+    handleAddGroup,
+    handleRemoveGroup,
     formatCurrency,
     parseCurrency,
   };

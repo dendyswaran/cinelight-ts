@@ -338,6 +338,7 @@ const QuotationList: React.FC = () => {
                 <RangePicker
                   style={{ width: "100%" }}
                   onChange={handleDateRangeChange}
+                  // @ts-ignore
                   value={
                     filter.startDate && filter.endDate
                       ? [moment(filter.startDate), moment(filter.endDate)]

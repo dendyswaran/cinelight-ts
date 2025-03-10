@@ -17,6 +17,8 @@ import {
   Tooltip,
   Descriptions,
   Tag,
+  Collapse,
+  Empty,
 } from "antd";
 import {
   PlusOutlined,
@@ -25,12 +27,17 @@ import {
   ArrowLeftOutlined,
   FileAddOutlined,
   CalculatorOutlined,
+  AppstoreOutlined,
+  TagsOutlined,
+  CalendarOutlined,
 } from "@ant-design/icons";
 import { useNavigate } from "react-router-dom";
 import useQuotationForm from "./hooks/useQuotationForm";
 import {
   QuotationItem,
   QuotationStatus,
+  QuotationSection,
+  QuotationItemGroup,
   ItemType,
 } from "../../services/QuotationService";
 import "./styles.css";
@@ -40,6 +47,7 @@ const { Title, Text } = Typography;
 const { TextArea } = Input;
 const { Option } = Select;
 const { TabPane } = Tabs;
+const { Panel } = Collapse;
 
 interface QuotationFormProps {
   mode: "create" | "edit";
@@ -53,26 +61,82 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
     form,
     itemForm,
     sectionForm,
+    groupForm,
     loading,
     submitting,
     quotation,
     items,
     sections,
+    groups,
     equipment,
     subtotal,
     tax,
     discount,
     total,
+    selectedSectionId,
+    selectedGroupId,
+    setSelectedSectionId,
+    setSelectedGroupId,
     handleSubmit,
     handleAddItem,
     handleRemoveItem,
     handleAddSection,
     handleRemoveSection,
+    handleAddGroup,
+    handleRemoveGroup,
     formatCurrency,
     parseCurrency,
   } = useQuotationForm({ mode });
 
-  // Table columns for items
+  // Table columns for items within a group
+  const groupItemColumns = [
+    {
+      title: "Item Name",
+      dataIndex: "itemName",
+      key: "itemName",
+    },
+    {
+      title: "Quantity",
+      dataIndex: "quantity",
+      key: "quantity",
+      width: 100,
+    },
+    {
+      title: "Price/Day",
+      dataIndex: "pricePerDay",
+      key: "pricePerDay",
+      render: (price: number) => formatCurrency(price),
+      width: 150,
+    },
+    {
+      title: "Days",
+      dataIndex: "days",
+      key: "days",
+      width: 80,
+    },
+    {
+      title: "Total",
+      dataIndex: "total",
+      key: "total",
+      render: (total: number) => formatCurrency(total),
+      width: 150,
+    },
+    {
+      title: "Action",
+      key: "action",
+      render: (record: QuotationItem) => (
+        <Button
+          type="text"
+          danger
+          icon={<DeleteOutlined />}
+          onClick={() => handleRemoveItem(record.id as number)}
+        />
+      ),
+      width: 80,
+    },
+  ];
+
+  // Table columns for standalone items (not in a group)
   const itemColumns = [
     {
       title: "Item Name",
@@ -145,6 +209,376 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
 
   const handleStatusChange = (value: QuotationStatus) => {
     form.setFieldValue("status", value);
+  };
+
+  // Render sections, groups, and items
+  const renderSectionsAndGroups = () => {
+    if (sections.length === 0) {
+      return (
+        <Empty
+          description="No sections added"
+          image={Empty.PRESENTED_IMAGE_SIMPLE}
+        />
+      );
+    }
+
+    return (
+      <Collapse
+        defaultActiveKey={sections.map((s) => s.id.toString())}
+        expandIconPosition="start"
+      >
+        {sections.map((section) => (
+          <Panel
+            key={section.id.toString()}
+            header={
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  width: "100%",
+                }}
+              >
+                <span>
+                  <CalendarOutlined style={{ marginRight: 8 }} />
+                  {section.name} - {moment(section.date).format("DD MMM YYYY")}
+                </span>
+                <span>
+                  <Tag color="blue">
+                    Subtotal: {formatCurrency(section.subtotal)}
+                  </Tag>
+                </span>
+              </div>
+            }
+            extra={
+              <Button
+                type="text"
+                danger
+                icon={<DeleteOutlined />}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveSection(section.id);
+                }}
+              />
+            }
+          >
+            <div className="section-content">
+              {section.description && (
+                <p className="section-description">{section.description}</p>
+              )}
+
+              {/* Section groups */}
+              <div className="section-groups">
+                <div className="section-groups-header">
+                  <Title level={5}>Groups</Title>
+                  <Button
+                    type="dashed"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      setSelectedSectionId(section.id);
+                      groupForm.resetFields();
+                    }}
+                  >
+                    Add Group
+                  </Button>
+                </div>
+
+                {selectedSectionId === section.id && (
+                  <Card className="group-form-card">
+                    <Form
+                      form={groupForm}
+                      layout="vertical"
+                      onFinish={handleAddGroup}
+                    >
+                      <Row gutter={16}>
+                        <Col span={12}>
+                          <Form.Item
+                            name="name"
+                            label="Group Name"
+                            rules={[
+                              {
+                                required: true,
+                                message: "Please enter group name",
+                              },
+                            ]}
+                          >
+                            <Input placeholder="Enter group name, e.g. Camera Package" />
+                          </Form.Item>
+                        </Col>
+                        <Col span={12}>
+                          <Form.Item name="description" label="Description">
+                            <Input placeholder="Enter group description" />
+                          </Form.Item>
+                        </Col>
+                      </Row>
+                      <Form.Item>
+                        <Button type="primary" htmlType="submit">
+                          Add Group
+                        </Button>
+                      </Form.Item>
+                    </Form>
+                  </Card>
+                )}
+
+                {/* Display groups in this section */}
+                {groups.filter((group) => group.sectionId === section.id)
+                  .length === 0 ? (
+                  <Empty
+                    description="No groups in this section"
+                    image={Empty.PRESENTED_IMAGE_SIMPLE}
+                  />
+                ) : (
+                  <Collapse>
+                    {groups
+                      .filter((group) => group.sectionId === section.id)
+                      .map((group) => (
+                        <Panel
+                          key={group.id.toString()}
+                          header={
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                width: "100%",
+                              }}
+                            >
+                              <span>
+                                <TagsOutlined style={{ marginRight: 8 }} />
+                                {group.name}
+                              </span>
+                              <span>
+                                <Tag color="green">
+                                  Total: {formatCurrency(group.total)}
+                                </Tag>
+                              </span>
+                            </div>
+                          }
+                          extra={
+                            <Button
+                              type="text"
+                              danger
+                              icon={<DeleteOutlined />}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRemoveGroup(group.id);
+                              }}
+                            />
+                          }
+                        >
+                          <div className="group-content">
+                            {group.description && (
+                              <p className="group-description">
+                                {group.description}
+                              </p>
+                            )}
+
+                            {/* Group items form */}
+                            <div className="group-items-header">
+                              <Title level={5}>Items in Group</Title>
+                              <Button
+                                type="dashed"
+                                icon={<PlusOutlined />}
+                                onClick={() => {
+                                  setSelectedGroupId(group.id);
+                                  itemForm.resetFields();
+                                }}
+                              >
+                                Add Item to Group
+                              </Button>
+                            </div>
+
+                            {selectedGroupId === group.id && renderItemForm()}
+
+                            {/* Group items table */}
+                            <Table
+                              dataSource={items.filter(
+                                (item) => item.groupId === group.id
+                              )}
+                              columns={groupItemColumns}
+                              rowKey="id"
+                              pagination={false}
+                              size="small"
+                            />
+                          </div>
+                        </Panel>
+                      ))}
+                  </Collapse>
+                )}
+              </div>
+            </div>
+          </Panel>
+        ))}
+      </Collapse>
+    );
+  };
+
+  // Render standalone items (not in any group)
+  const renderStandaloneItems = () => {
+    const standaloneItems = items.filter((item) => !item.groupId);
+
+    return (
+      <div>
+        <div className="standalone-items-header">
+          <Title level={4}>Standalone Items</Title>
+          <Button
+            type="dashed"
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setSelectedGroupId(null);
+              itemForm.resetFields();
+            }}
+          >
+            Add Standalone Item
+          </Button>
+        </div>
+
+        {!selectedGroupId && renderItemForm()}
+
+        {standaloneItems.length > 0 ? (
+          <Table
+            dataSource={standaloneItems}
+            columns={itemColumns}
+            rowKey="id"
+            pagination={false}
+            scroll={{ x: "max-content" }}
+          />
+        ) : (
+          <Empty
+            description="No standalone items added"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        )}
+      </div>
+    );
+  };
+
+  // Render the item form
+  const renderItemForm = () => {
+    return (
+      <Form
+        form={itemForm}
+        layout="vertical"
+        onFinish={handleAddItem}
+        initialValues={{
+          quantity: 1,
+          days: 1,
+          unit: "Set",
+          type: ItemType.RENTAL,
+        }}
+        className="item-form-card"
+      >
+        <Row gutter={16}>
+          <Col xs={24} md={6}>
+            <Form.Item name="equipmentId" label="Select Equipment">
+              <Select
+                placeholder="Select equipment"
+                allowClear
+                showSearch
+                optionFilterProp="children"
+                onChange={(value) => {
+                  const selected = equipment.find((e) => e.id === value);
+                  if (selected) {
+                    itemForm.setFieldsValue({
+                      itemName: selected.name,
+                      pricePerDay: selected.dailyRentalPrice,
+                    });
+                  }
+                }}
+              >
+                {equipment.map((item) => (
+                  <Option key={item.id} value={item.id}>
+                    {item.name} - {formatCurrency(item.dailyRentalPrice)}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={6}>
+            <Form.Item
+              name="itemName"
+              label="Item Name"
+              rules={[{ required: true, message: "Please enter item name" }]}
+            >
+              <Input placeholder="Enter item name" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={3}>
+            <Form.Item
+              name="quantity"
+              label="Quantity"
+              rules={[{ required: true, message: "Please enter quantity" }]}
+            >
+              <InputNumber min={1} style={{ width: "100%" }} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={3}>
+            <Form.Item name="unit" label="Unit">
+              <Input placeholder="Set" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={3}>
+            <Form.Item
+              name="days"
+              label="Days"
+              rules={[{ required: true, message: "Please enter days" }]}
+            >
+              <InputNumber min={1} style={{ width: "100%" }} />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={3}>
+            <Form.Item
+              name="type"
+              label="Type"
+              rules={[{ required: true, message: "Please select type" }]}
+            >
+              <Select>
+                {Object.values(ItemType).map((type) => (
+                  <Option key={type} value={type}>
+                    {type.toUpperCase()}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Row gutter={16}>
+          <Col xs={24} md={12}>
+            <Form.Item name="description" label="Description">
+              <TextArea rows={2} placeholder="Enter item description" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={6}>
+            <Form.Item name="remarks" label="Remarks">
+              <Input placeholder="Enter remarks" />
+            </Form.Item>
+          </Col>
+          <Col xs={24} md={6}>
+            <Form.Item
+              name="pricePerDay"
+              label="Price Per Day"
+              rules={[{ required: true, message: "Please enter price" }]}
+            >
+              <InputNumber
+                style={{ width: "100%" }}
+                formatter={(value) => formatCurrency(value as number)}
+                parser={(value) => parseCurrency(value)}
+              />
+            </Form.Item>
+          </Col>
+        </Row>
+
+        <Form.Item>
+          <Button
+            type="primary"
+            htmlType="submit"
+            block
+            icon={<PlusOutlined />}
+          >
+            Add Item
+          </Button>
+        </Form.Item>
+      </Form>
+    );
   };
 
   return (
@@ -291,155 +725,88 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                 </Col>
               </Row>
 
-              <Card title="Quotation Items" className="items-section">
+              {/* Add Sections */}
+              <Card title="Quotation Sections" className="sections-section">
+                <div className="sections-header">
+                  <div>
+                    <Title level={4}>Sections</Title>
+                    <Text type="secondary">
+                      Create sections for different parts of the quotation
+                    </Text>
+                  </div>
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={() => {
+                      sectionForm.resetFields();
+                      // Set initial values
+                      sectionForm.setFieldsValue({
+                        date: moment(),
+                      });
+                    }}
+                  >
+                    Add New Section
+                  </Button>
+                </div>
+
+                {/* Section form */}
                 <Form
-                  form={itemForm}
+                  form={sectionForm}
                   layout="vertical"
-                  onFinish={handleAddItem}
-                  initialValues={{
-                    quantity: 1,
-                    days: 1,
-                    unit: "Set",
-                    type: ItemType.RENTAL,
-                  }}
+                  onFinish={handleAddSection}
+                  className="section-form"
                 >
                   <Row gutter={16}>
-                    <Col xs={24} md={6}>
-                      <Form.Item name="equipmentId" label="Select Equipment">
-                        <Select
-                          placeholder="Select equipment"
-                          allowClear
-                          showSearch
-                          optionFilterProp="children"
-                          onChange={(value) => {
-                            const selected = equipment.find(
-                              (e) => e.id === value
-                            );
-                            if (selected) {
-                              itemForm.setFieldsValue({
-                                itemName: selected.name,
-                                pricePerDay: selected.dailyRentalPrice,
-                              });
-                            }
-                          }}
-                        >
-                          {equipment.map((item) => (
-                            <Option key={item.id} value={item.id}>
-                              {item.name} -{" "}
-                              {formatCurrency(item.dailyRentalPrice)}
-                            </Option>
-                          ))}
-                        </Select>
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={6}>
+                    <Col span={12}>
                       <Form.Item
-                        name="itemName"
-                        label="Item Name"
+                        name="name"
+                        label="Section Name"
                         rules={[
-                          { required: true, message: "Please enter item name" },
+                          {
+                            required: true,
+                            message: "Please enter section name",
+                          },
                         ]}
                       >
-                        <Input placeholder="Enter item name" />
+                        <Input placeholder="Enter section name, e.g. Day 1 - Shooting" />
                       </Form.Item>
                     </Col>
-                    <Col xs={24} md={3}>
+                    <Col span={6}>
                       <Form.Item
-                        name="quantity"
-                        label="Quantity"
+                        name="date"
+                        label="Section Date"
                         rules={[
-                          { required: true, message: "Please enter quantity" },
+                          { required: true, message: "Please select a date" },
                         ]}
                       >
-                        <InputNumber min={1} style={{ width: "100%" }} />
+                        <DatePicker style={{ width: "100%" }} />
                       </Form.Item>
                     </Col>
-                    <Col xs={24} md={3}>
-                      <Form.Item name="unit" label="Unit">
-                        <Input placeholder="Set" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={3}>
-                      <Form.Item
-                        name="days"
-                        label="Days"
-                        rules={[
-                          { required: true, message: "Please enter days" },
-                        ]}
-                      >
-                        <InputNumber min={1} style={{ width: "100%" }} />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={3}>
-                      <Form.Item
-                        name="type"
-                        label="Type"
-                        rules={[
-                          { required: true, message: "Please select type" },
-                        ]}
-                      >
-                        <Select>
-                          {Object.values(ItemType).map((type) => (
-                            <Option key={type} value={type}>
-                              {type.toUpperCase()}
-                            </Option>
-                          ))}
-                        </Select>
+                    <Col span={6}>
+                      <Form.Item label=" " style={{ marginBottom: 0 }}>
+                        <Button type="primary" htmlType="submit">
+                          Add Section
+                        </Button>
                       </Form.Item>
                     </Col>
                   </Row>
-
-                  <Row gutter={16}>
-                    <Col xs={24} md={12}>
-                      <Form.Item name="description" label="Description">
-                        <TextArea
-                          rows={2}
-                          placeholder="Enter item description"
-                        />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={6}>
-                      <Form.Item name="remarks" label="Remarks">
-                        <Input placeholder="Enter remarks" />
-                      </Form.Item>
-                    </Col>
-                    <Col xs={24} md={6}>
-                      <Form.Item
-                        name="pricePerDay"
-                        label="Price Per Day"
-                        rules={[
-                          { required: true, message: "Please enter price" },
-                        ]}
-                      >
-                        <InputNumber
-                          style={{ width: "100%" }}
-                          formatter={(value) => formatCurrency(value)}
-                          // @ts-ignore
-                          parser={(value) => parseCurrency(value)}
-                        />
-                      </Form.Item>
-                    </Col>
-                  </Row>
-
-                  <Form.Item>
-                    <Button
-                      type="dashed"
-                      onClick={() => itemForm.submit()}
-                      block
-                      icon={<PlusOutlined />}
-                    >
-                      Add Item
-                    </Button>
+                  <Form.Item name="description" label="Description">
+                    <TextArea
+                      rows={2}
+                      placeholder="Enter section description"
+                    />
                   </Form.Item>
                 </Form>
 
-                <Table
-                  columns={itemColumns}
-                  dataSource={items}
-                  rowKey="id"
-                  pagination={false}
-                  scroll={{ x: "max-content" }}
-                />
+                <Divider />
+
+                {/* Display sections and groups */}
+                {renderSectionsAndGroups()}
+
+                <Divider />
+
+                {/* Standalone items not in any section/group */}
+                {renderStandaloneItems()}
 
                 <Divider />
 
@@ -530,6 +897,17 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
                   <TextArea rows={3} placeholder="Enter terms and conditions" />
                 </Form.Item>
               </Card>
+
+              <div className="form-actions">
+                <Space>
+                  <Button onClick={() => navigate("/quotations")}>
+                    Cancel
+                  </Button>
+                  <Button type="primary" htmlType="submit" loading={submitting}>
+                    {mode === "create" ? "Create" : "Update"}
+                  </Button>
+                </Space>
+              </div>
             </Form>
           </TabPane>
 
@@ -589,15 +967,78 @@ const QuotationForm: React.FC<QuotationFormProps> = ({ mode }) => {
 
               <Divider />
 
-              <Title level={5}>Quotation Items</Title>
-              <Table
-                columns={itemColumns.filter((col) => col.key !== "action")}
-                dataSource={items}
-                rowKey="id"
-                pagination={false}
-                size="small"
-                scroll={{ x: "max-content" }}
-              />
+              {/* Preview Sections */}
+              {sections.length > 0 && (
+                <>
+                  <Title level={5}>Sections</Title>
+                  {sections.map((section) => (
+                    <div key={section.id} className="preview-section">
+                      <Card
+                        title={`${section.name} - ${moment(section.date).format(
+                          "DD MMM YYYY"
+                        )}`}
+                      >
+                        {section.description && <p>{section.description}</p>}
+
+                        {/* Section's groups */}
+                        {groups
+                          .filter((group) => group.sectionId === section.id)
+                          .map((group) => (
+                            <div key={group.id} className="preview-group">
+                              <Card
+                                type="inner"
+                                title={group.name}
+                                extra={
+                                  <Tag color="green">
+                                    Total: {formatCurrency(group.total)}
+                                  </Tag>
+                                }
+                              >
+                                {group.description && (
+                                  <p>{group.description}</p>
+                                )}
+
+                                {/* Group's items */}
+                                <Table
+                                  dataSource={items.filter(
+                                    (item) => item.groupId === group.id
+                                  )}
+                                  columns={groupItemColumns.filter(
+                                    (col) => col.key !== "action"
+                                  )}
+                                  rowKey="id"
+                                  pagination={false}
+                                  size="small"
+                                />
+                              </Card>
+                            </div>
+                          ))}
+
+                        <div style={{ textAlign: "right", marginTop: 8 }}>
+                          <Text strong>
+                            Section Total: {formatCurrency(section.subtotal)}
+                          </Text>
+                        </div>
+                      </Card>
+                    </div>
+                  ))}
+                </>
+              )}
+
+              {/* Standalone Items */}
+              {items.filter((item) => !item.groupId).length > 0 && (
+                <>
+                  <Title level={5}>Items</Title>
+                  <Table
+                    columns={itemColumns.filter((col) => col.key !== "action")}
+                    dataSource={items.filter((item) => !item.groupId)}
+                    rowKey="id"
+                    pagination={false}
+                    size="small"
+                    scroll={{ x: "max-content" }}
+                  />
+                </>
+              )}
 
               <Row style={{ marginTop: 24 }}>
                 <Col span={16}></Col>
