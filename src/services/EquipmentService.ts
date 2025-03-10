@@ -24,6 +24,26 @@ export interface EquipmentCategory {
   isActive: boolean;
 }
 
+export interface EquipmentBundle {
+  id: number;
+  name: string;
+  description?: string;
+  dailyRentalPrice: number;
+  discount: number;
+  isActive: boolean;
+  bundleItems: EquipmentBundleItem[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EquipmentBundleItem {
+  id: number;
+  bundleId: number;
+  equipmentId: number;
+  quantity: number;
+  equipment?: Equipment;
+}
+
 export interface PaginationMeta {
   total: number;
   page: number;
@@ -208,6 +228,62 @@ export class EquipmentService {
   async deleteCategory(id: number): Promise<SingleResponse<null>> {
     const response = await axios.delete<SingleResponse<null>>(
       `${API_URL}/equipment/categories/${id}`,
+      this.getAuthHeaders()
+    );
+    return response.data;
+  }
+
+  // Bundle methods
+  async getAllBundles(
+    params: { page?: number; limit?: number; search?: string } = {}
+  ): Promise<PaginatedResponse<EquipmentBundle>> {
+    const queryParams = new URLSearchParams();
+
+    if (params.page) queryParams.append("page", params.page.toString());
+    if (params.limit) queryParams.append("limit", params.limit.toString());
+    if (params.search) queryParams.append("search", params.search);
+
+    const response = await axios.get<PaginatedResponse<EquipmentBundle>>(
+      `${API_URL}/bundles?${queryParams.toString()}`,
+      this.getAuthHeaders()
+    );
+    return response.data;
+  }
+
+  async getBundleById(id: number): Promise<SingleResponse<EquipmentBundle>> {
+    const response = await axios.get<SingleResponse<EquipmentBundle>>(
+      `${API_URL}/bundles/${id}`,
+      this.getAuthHeaders()
+    );
+    return response.data;
+  }
+
+  async createBundle(
+    bundle: Omit<EquipmentBundle, "id" | "createdAt" | "updatedAt">
+  ): Promise<SingleResponse<EquipmentBundle>> {
+    const response = await axios.post<SingleResponse<EquipmentBundle>>(
+      `${API_URL}/bundles`,
+      bundle,
+      this.getAuthHeaders()
+    );
+    return response.data;
+  }
+
+  async updateBundle(
+    id: number,
+    bundle: Partial<Omit<EquipmentBundle, "id" | "createdAt" | "updatedAt">>
+  ): Promise<SingleResponse<EquipmentBundle>> {
+    const response = await axios.put<SingleResponse<EquipmentBundle>>(
+      `${API_URL}/bundles/${id}`,
+      bundle,
+      this.getAuthHeaders()
+    );
+    return response.data;
+  }
+
+  async deleteBundle(id: number): Promise<SingleResponse<null>> {
+    const response = await axios.delete<SingleResponse<null>>(
+      `${API_URL}/bundles/${id}`,
       this.getAuthHeaders()
     );
     return response.data;

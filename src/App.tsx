@@ -27,6 +27,12 @@ import CategoryDetail from "./pages/EquipmentCategory/CategoryDetail";
 import CreateCategory from "./pages/EquipmentCategory/CreateCategory";
 import EditCategory from "./pages/EquipmentCategory/EditCategory";
 
+// Equipment Bundle pages
+import EquipmentBundleList from "./pages/EquipmentBundle";
+import BundleDetail from "./pages/EquipmentBundle/BundleDetail";
+import CreateBundle from "./pages/EquipmentBundle/CreateBundle";
+import EditBundle from "./pages/EquipmentBundle/EditBundle";
+
 // Configure theme
 const theme = {
   token: {
@@ -118,6 +124,14 @@ function AppRoutes() {
           <Route path=":id" element={<CategoryDetail />} />
           <Route path="create" element={<CreateCategory />} />
           <Route path="edit/:id" element={<EditCategory />} />
+        </Route>
+
+        {/* Equipment Bundle Routes */}
+        <Route path="equipment-bundles">
+          <Route index element={<EquipmentBundleList />} />
+          <Route path=":id" element={<BundleDetail />} />
+          <Route path="create" element={<CreateBundle />} />
+          <Route path="edit/:id" element={<EditBundle />} />
         </Route>
 
         {/* Add more routes as needed */}

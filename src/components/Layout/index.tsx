@@ -30,6 +30,7 @@ import {
   CameraOutlined,
   AppstoreOutlined,
   DatabaseOutlined,
+  GiftOutlined,
 } from "@ant-design/icons";
 import { useAuth } from "../../contexts/AuthContext";
 import Logo from "../Logo";
@@ -81,6 +82,21 @@ const Layout: React.FC = () => {
     return [pathname];
   };
 
+  // Determine which sub-menu should be open
+  const getOpenKeys = () => {
+    const pathname = location.pathname;
+
+    if (
+      pathname.startsWith("/equipment") ||
+      pathname.startsWith("/equipment-categories") ||
+      pathname.startsWith("/equipment-bundles")
+    ) {
+      return ["masterData"];
+    }
+
+    return [];
+  };
+
   // Handle submenu open changes
   const onOpenChange: MenuProps["onOpenChange"] = (keys) => {
     setOpenKeys(keys as string[]);
@@ -110,6 +126,12 @@ const Layout: React.FC = () => {
           label: "Categories",
           icon: <AppstoreOutlined />,
           onClick: () => navigate("/equipment-categories"),
+        },
+        {
+          key: "/equipment-bundles",
+          label: "Bundles",
+          icon: <GiftOutlined />,
+          onClick: () => navigate("/equipment-bundles"),
         },
       ],
     },
@@ -221,9 +243,18 @@ const Layout: React.FC = () => {
       return "Category Management";
     }
 
+    // For bundle paths
+    if (
+      pathname.startsWith("/equipment-bundles") &&
+      pathname !== "/equipment-bundles"
+    ) {
+      return "Bundle Management";
+    }
+
     // For main routes
     if (pathname === "/equipment") return "Equipment";
     if (pathname === "/equipment-categories") return "Categories";
+    if (pathname === "/equipment-bundles") return "Equipment Bundles";
     if (pathname === "/quotations") return "Quotations";
     if (pathname === "/delivery-orders") return "Delivery Orders";
     if (pathname === "/invoices") return "Invoices";
@@ -263,6 +294,7 @@ const Layout: React.FC = () => {
         <Menu
           mode="inline"
           selectedKeys={getSelectedKeys()}
+          defaultOpenKeys={getOpenKeys()}
           openKeys={collapsed ? [] : openKeys}
           onOpenChange={onOpenChange}
           items={menuItems}
